@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אתר זכרון מאיר כיתה ח</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+    <form name="contact" netlify></form>
+
+<div class="navbar">
+    <a href="index.html">צ'אט ציבורי</a>
+    <a href="play.html">למשחק הלחיצות לחץ כאן</a>
+    <a href="index.html">להסבר על האתר</a>
+    <a href="play2.html">למשחק תפוס את הצבעה לחץ כאן</a>
+</div>
+
+<div class="chat-container">
+    <div class="chat-header">צ'אט</div>
+    <div class="chat-messages" id="chatMessages">
+        <!-- כאן יופיעו הודעות הצ'אט -->
+    </div>
+    <div class="chat-input">
+        <input id="messageInput" type="text" placeholder="הקלד הודעה">
+        <button id="sendButtonA">שלח</button>
+    </div>
+</div>
+
+<div id="contextMenu" class="context-menu hidden">
+    <button onclick="deleteMessage()">מחק הודעה</button>
+    <button onclick="hideContextMenu()">ביטול</button>
+</div>
+
+<script src="https://cdn.socket.io/4.3.1/socket.io.min.js"></script>
+<script>
+// קוד הלקוח - צד הלקוח (דף HTML)
+
+        // חיבור לשרת Socket.ioז
+        const socket = io();
+
+        // קבלת שם משתמש מהאחסון המקומי
+        let userName = localStorage.getItem("whatsappUserName");
+        let userId = localStorage.getItem("whatsappUserId");
+        if (!userName || !userId) {
+            setUserName(); // אם אין שם משתמש, הגדרת שם ראשוני
+        }
+
+        const messageInput = document.getElementById("messageInput");
+        const sendButtonA = document.getElementById("sendButtonA");
+        const chatMessages = document.getElementById("chatMessages");
+        let messages = JSON.parse(localStorage.getItem("whatsappMessages")) || [];
+
+        // טעינת הודעות מהשרת בעת טעינת הדף
+        socket.on('loadMessages', function(serverMessages) {
+            messages = serverMessages;
+            localStorage.setItem("whatsappMessages", JSON.stringify(messages));
+            renderMessages();
+        });
+
+        // שליחת הודעה מהלקוח לשרת
+        sendButtonA.addEventListener("click", function(event) {
+            event.preventDefault();
+
+            const messageText = messageInput.value.trim();
+            if (messageText !== "") {
+                const date = new Date();
+                const message = {
+                    id: Date.now(),
+                    userId: userId,
+                    sender: userName,
+                    text: messageText,
+                    timestamp: `${date.getHours()}:${date.getMinutes()}`
+                };
+
+                sendButtonA.disabled = true; // חסימת הכפתור שליחה עד לקבלת מענה מהשרת
+
+                renderMessage(message); // הצגת הודעה בממשק המשתמש
+                socket.emit('sendMessage', message); // שליחת הודעה לשרת
+
+                setTimeout(function() {
+                    sendButtonA.disabled = false;
+                }, 1000);
+
+                messages.push(message);
+                localStorage.setItem("whatsappMessages", JSON.stringify(messages));
+                messageInput.value = "";
+            }
+        });
+
+        // קבלת הודעה מהשרת והצגתה בממשק המשתמש
+        socket.on('receiveMessage', function(message) {
+            messages.push(message);
+            localStorage.setItem("whatsappMessages", JSON.stringify(messages));
+            renderMessage(message);
+        });
+
+        // מחיקת הודעה מהשרת והסרתה מממשק המשתמש
+        socket.on('deleteMessage', function(messageId) {
+            messages = messages.filter(msg => msg.id !== messageId);
+            localStorage.setItem("whatsappMessages", JSON.stringify(messages));
+            renderMessages();
+        });
+
+        // פונקציה להצגת כל הודעות הצ'אט בממשק המשתמש
+        function renderMessages() {
+            chatMessages.innerHTML = "";
+            messages.forEach(renderMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // פונקציה להצגת הודעה בממשק המשתמש
+        function renderMessage(message) {
+            const messageDiv = document.createElement("div");
+            messageDiv.dataset.id = message.id;
+            messageDiv.classList.add("message", message.sender === userName ? "from-me" : "from-them");
+
+            const metaSpan = document.createElement("span");
+            metaSpan.classList.add("meta");
+            metaSpan.innerText = `${message.sender} - ${message.timestamp}`;
+
+            messageDiv.appendChild(metaSpan);
+            messageDiv.appendChild(document.createTextNode(message.text));
+
+            if (message.sender === userName) {
+                const deleteButton = document.createElement("button");
+                deleteButton.innerText = "מחק";
+                deleteButton.onclick = function() {
+                    socket.emit('deleteMessage', { messageId: message.id, userId: userId });
+                };
+                messageDiv.appendChild(deleteButton);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // פונקציה להגדרת שם משתמש
+        function setUserName() {
+            // הוסיפו כאן את הלוגיקה להגדרת שם משתמש
+            userName = prompt("אנא הכנס שם משתמש:");
+            userId = Date.now().toString(); // יצירת מזהה ייחודי למשתמש
+            if (userName) {
+                localStorage.setItem("whatsappUserName", userName);
+                localStorage.setItem("whatsappUserId", userId);
+            } else {
+                // טיפול במקרה של ביטול
+                alert("שם משתמש הוא שדה חובה. אנא רענן את העמוד והגדר שם משתמש.");
+                location.reload();
+            }
+        }
+
+</script>
+
+</body>
+</html>

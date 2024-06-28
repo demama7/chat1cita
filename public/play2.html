@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>תפוס את הצבע</title>
+    <style>
+        body {
+            background:linear-gradient(rgb(206, 195, 38),rgb(250, 162, 80));
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .container {
+            text-align: center;
+        }
+        .square {
+            width: 100px;
+            height: 100px;
+            display: none;
+            margin: 10px;
+            position: absolute;
+        }
+        .red { background-color: red; }
+        .blue { background-color: blue; }
+        .green { background-color: green; }
+        .yellow { background-color: yellow; }
+        .menu, .timer {
+            margin-top: 20px;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .startButton button{
+            color: rgb(99, 255, 234);
+        }
+        .container{
+            background-color: #3fe497;
+            margin: 150px;
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="startButton">התחל משחק</button>
+        <div class="timer">
+            <p id="timerDisplay">זמן נותר: 30 שניות</p>
+        </div>
+        <div class="menu" id="menu" style="display: none;">
+            <p id="resultText"></p>
+            <button onclick="window.location.reload()">משחק נוסף</button>
+        </div>
+        <div class="results">
+            <h3>תוצאות קודמות:</h3>
+            <ul id="resultsList"></ul>
+        </div>
+        <div id="gameArea">
+            <div class="square red" id="redSquare"></div>
+            <div class="square blue" id="blueSquare"></div>
+            <div class="square green" id="greenSquare"></div>
+            <div class="square yellow" id="yellowSquare"></div>
+        </div>
+    </div>
+
+    <script>
+        const squares = {
+            red: document.getElementById('redSquare'),
+            blue: document.getElementById('blueSquare'),
+            green: document.getElementById('greenSquare'),
+            yellow: document.getElementById('yellowSquare')
+        };
+        const startButton = document.getElementById('startButton');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const menu = document.getElementById('menu');
+        const resultText = document.getElementById('resultText');
+        const gameArea = document.getElementById('gameArea');
+        const resultsList = document.getElementById('resultsList');
+
+        let score = 0;
+        let timer;
+        let targetColor;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            displayResults();
+        });
+
+        startButton.addEventListener('click', function() {
+            startButton.style.display = 'none';
+            startGame();
+        });
+
+        function startGame() {
+            score = 0;
+            timerDisplay.textContent = 'זמן נותר: 30 שניות';
+            showRandomSquare();
+            startTimer(30);
+        }
+
+        function showRandomSquare() {
+            hideAllSquares();
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            targetColor = colors[Math.floor(Math.random() * colors.length)];
+            const targetSquare = squares[targetColor];
+            targetSquare.style.display = 'block';
+            targetSquare.style.top = `${Math.random() * 80}%`;
+            targetSquare.style.left = `${Math.random() * 80}%`;
+            targetSquare.addEventListener('click', handleSquareClick);
+        }
+
+        function hideAllSquares() {
+            for (const color in squares) {
+                squares[color].style.display = 'none';
+                squares[color].removeEventListener('click', handleSquareClick);
+            }
+        }
+
+        function handleSquareClick() {
+            score++;
+            showRandomSquare();
+        }
+
+        function startTimer(seconds) {
+            let timeLeft = seconds;
+            timer = setInterval(function() {
+                timeLeft--;
+                timerDisplay.textContent = `זמן נותר: ${timeLeft} שניות`;
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            hideAllSquares();
+            resultText.textContent = `המשחק נגמר! התוצאה שלך היא: ${score}`;
+            saveResult(score);
+            menu.style.display = 'block';
+            displayResults();
+        }
+
+        function saveResult(score) {
+            let results = JSON.parse(localStorage.getItem('gameResults')) || [];
+            results.push(score);
+            results.sort((a, b) => b - a); // מיון מהגבוה לנמוך
+            localStorage.setItem('gameResults', JSON.stringify(results));
+        }
+
+        function displayResults() {
+            let results = JSON.parse(localStorage.getItem('gameResults')) || [];
+            resultsList.innerHTML = '';
+            results.forEach((result, index) => {
+                let li = document.createElement('li');
+                li.textContent = `מקום ${index + 1}: ${result} נקודות`;
+                resultsList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

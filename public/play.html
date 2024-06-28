@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>משחק שני שחקנים</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .game-container {
+            text-align: center;
+        }
+        .square {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 100px;
+            text-align: center;
+            color: #fff;
+            border-radius: 10px;
+        }
+        .red {
+            background-color: red;
+        }
+        .blue {
+            background-color: blue;
+        }
+        .menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            text-align: center;
+        }
+        .menu p {
+            margin: 0 0 10px 0;
+        }
+        .menu button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .timer {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="square red" id="redSquare">
+            אדום: <span id="redCounter">0</span>
+        </div>
+        <div class="square blue" id="blueSquare">
+            כחול: <span id="blueCounter">0</span>
+        </div>
+    </div>
+
+    <div class="timer">
+        <p id="timerDisplay"></p>
+    </div>
+
+    <div class="menu" id="menu">
+        <p>המשחק נגמר!</p>
+        <p id="winnerText"></p>
+        <button id="playAgainButton">משחק נוסף</button>
+       
+    </div>
+
+    <script>
+        const redSquare = document.getElementById('redSquare');
+        const blueSquare = document.getElementById('blueSquare');
+        const menu = document.getElementById('menu');
+        const winnerText = document.getElementById('winnerText');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const redCounter = document.getElementById('redCounter');
+        const blueCounter = document.getElementById('blueCounter');
+        const playAgainButton = document.getElementById('playAgainButton');
+        
+
+        let currentPlayerIsBlue = Math.random() < 0.5; // בחירת השחקן הראשון באופן רנדומלי
+        let redClicks = 0;
+        let blueClicks = 0;
+        let timer;
+
+        redSquare.addEventListener('click', function() {
+            if (!canPlayerClick(redSquare)) return;
+            redClicks++;
+            updateSquareCounters();
+        });
+
+        blueSquare.addEventListener('click', function() {
+            if (!canPlayerClick(blueSquare)) return;
+            blueClicks++;
+            updateSquareCounters();
+        });
+
+        playAgainButton.addEventListener('click', function() {
+            location.reload(); // טוען את הדף מחדש כדי להתחיל משחק נוסף
+        });
+
+       
+
+        function updateSquareCounters() {
+            redCounter.textContent = redClicks;
+            blueCounter.textContent = blueClicks;
+        }
+
+        function checkWinner() {
+            displayWinner();
+        }
+
+        function displayWinner() {
+            if (redClicks > blueClicks) {
+                winnerText.textContent = "המנצח הוא: אדום";
+            } else if (blueClicks > redClicks) {
+                winnerText.textContent = "המנצח הוא: כחול";
+            } else {
+                winnerText.textContent = "תיקו!";
+            }
+            menu.style.display = 'block';
+        }
+
+        function countdown() {
+            let seconds = 20;
+            timer = setInterval(function() {
+                seconds--;
+                timerDisplay.textContent = `זמן נותר: ${seconds} שניות`;
+                if (seconds === 0) {
+                    clearInterval(timer);
+                    displayWinner();
+                }
+            }, 1000);
+        }
+
+        countdown();
+        
+        function canPlayerClick(square) {
+            return (currentPlayerIsBlue && square === blueSquare) || (!currentPlayerIsBlue && square === redSquare);
+        }
+    </script>
+</body>
+</html>
