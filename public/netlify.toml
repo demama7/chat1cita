@@ -1,6 +1,6 @@
 [build]
   command = "npm install && npm run build"
-  publish = "project/public"
+  publish = "project1"
 
 [context.production.environment]
   NODE_VERSION = "14"
