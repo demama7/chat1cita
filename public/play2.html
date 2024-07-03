@@ -48,6 +48,7 @@
 </head>
 <body>
     <div class="container">
+        <input type="text" id="usernameInput" placeholder="הכנס את שמך">
         <button id="startButton">התחל משחק</button>
         <div class="timer">
             <p id="timerDisplay">זמן נותר: 30 שניות</p>
@@ -68,13 +69,17 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
+        const socket = io();
+
         const squares = {
             red: document.getElementById('redSquare'),
             blue: document.getElementById('blueSquare'),
             green: document.getElementById('greenSquare'),
             yellow: document.getElementById('yellowSquare')
         };
+        const usernameInput = document.getElementById('usernameInput');
         const startButton = document.getElementById('startButton');
         const timerDisplay = document.getElementById('timerDisplay');
         const menu = document.getElementById('menu');
@@ -85,12 +90,29 @@
         let score = 0;
         let timer;
         let targetColor;
+        let username;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            displayResults();
+        socket.on('resultsUpdate', (results) => {
+            displayResults(results);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // לבדוק אם יש שם משתמש שמור ב-localStorage
+            username = localStorage.getItem('username');
+            if (username) {
+                usernameInput.value = username;
+                usernameInput.style.display = 'none';
+            }
         });
 
         startButton.addEventListener('click', function() {
+            username = usernameInput.value.trim();
+            if (!username) {
+                alert('אנא הכנס את שמך לפני תחילת המשחק');
+                return;
+            }
+            localStorage.setItem('username', username);
+            usernameInput.style.display = 'none';
             startButton.style.display = 'none';
             startGame();
         });
@@ -140,24 +162,19 @@
         function endGame() {
             hideAllSquares();
             resultText.textContent = `המשחק נגמר! התוצאה שלך היא: ${score}`;
-            saveResult(score);
+            saveResult(score, username);
             menu.style.display = 'block';
-            displayResults();
         }
 
-        function saveResult(score) {
-            let results = JSON.parse(localStorage.getItem('gameResults')) || [];
-            results.push(score);
-            results.sort((a, b) => b - a); // מיון מהגבוה לנמוך
-            localStorage.setItem('gameResults', JSON.stringify(results));
+        function saveResult(score, username) {
+            socket.emit('newResult', { score, username });
         }
 
-        function displayResults() {
-            let results = JSON.parse(localStorage.getItem('gameResults')) || [];
+        function displayResults(results) {
             resultsList.innerHTML = '';
             results.forEach((result, index) => {
                 let li = document.createElement('li');
-                li.textContent = `מקום ${index + 1}: ${result} נקודות`;
+                li.textContent = `מקום ${index + 1}: ${result.username} - ${result.score} נקודות`;
                 resultsList.appendChild(li);
             });
         }

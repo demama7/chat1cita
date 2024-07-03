@@ -33,6 +33,11 @@ function saveMessagesToFile() {
     }
 }
 
+
+
+
+
+
 // טיפול בחיבורים של Socket.io
 io.on('connection', (socket) => {
     console.log('Client connected');
@@ -47,6 +52,7 @@ io.on('connection', (socket) => {
         saveMessagesToFile();
         io.emit('receiveMessage', message);
     });
+
 
     // מחיקת הודעה על פי מזהה ואימות משתמש
     socket.on('deleteMessage', (data) => {
@@ -65,7 +71,61 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('Client disconnected');
     });
+
+
+
+    // מערך לאחסון תוצאות המשחק
+let results = [];
+
+// טעינת תוצאות המשחק מהאחסון המקומי אם קיימות
+const resultsPath = path.join(__dirname, 'localResults.json');
+try {
+    if (fs.existsSync(resultsPath)) {
+        const resultsData = fs.readFileSync(resultsPath);
+        results = JSON.parse(resultsData);
+    }
+} catch (err) {
+    console.error('Error reading local results file:', err);
+}
+
+function saveResultsToFile() {
+    // תשמור רק חמישת התוצאות הטובות ביותר
+    const topResults = results.slice(0, 5);
+    try {
+        fs.writeFileSync(resultsPath, JSON.stringify(topResults));
+    } catch (err) {
+        console.error('Error writing local results file:', err);
+    }
+}
+
+
+
+    // שליחת הודעות ללקוח המחובר
+    socket.emit('loadMessages', messages);
+
+    // שליחת תוצאות המשחק ללקוח המחובר
+    socket.emit('resultsUpdate', results);
+
+    // קבלת הודעה חדשה מהלקוח ושליחתה לכל הלקוחות
+    socket.on('sendMessage', (message) => {
+        console.log('Received message:', message);
+        messages.push(message);
+        saveMessagesToFile();
+        io.emit('receiveMessage', message);
+    });
+
+    // קבלת תוצאה חדשה מהלקוח ושליחתה לכל הלקוחות
+    socket.on('newResult', (data) => {
+        const { score, username } = data;
+        console.log('Received score:', score, 'from', username);
+        results.push({ score, username });
+        results.sort((a, b) => b.score - a.score); // מיון מהגבוה לנמוך
+        saveResultsToFile();
+        io.emit('resultsUpdate', results);
+    });
 });
+
+
 
 // הפנה את כל הבקשות לקובץ index.html
 app.get('*', (req, res) => {
@@ -77,3 +137,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+
+
