@@ -33,48 +33,7 @@ function saveMessagesToFile() {
     }
 }
 
-
-
-
-
-
-// טיפול בחיבורים של Socket.io
-io.on('connection', (socket) => {
-    console.log('Client connected');
-
-    // שליחת הודעות ללקוח המחובר
-    socket.emit('loadMessages', messages);
-
-    // קבלת הודעה חדשה מהלקוח ושליחתה לכל הלקוחות
-    socket.on('sendMessage', (message) => {
-        console.log('Received message:', message);
-        messages.push(message);
-        saveMessagesToFile();
-        io.emit('receiveMessage', message);
-    });
-
-
-    // מחיקת הודעה על פי מזהה ואימות משתמש
-    socket.on('deleteMessage', (data) => {
-        const { messageId, userId } = data;
-        console.log(`Deleting message with id ${messageId} for user ${userId}`);
-
-        // נימוק מחיקת הודעה
-        const messageIndex = messages.findIndex(msg => msg.id === messageId && msg.userId === userId);
-        if (messageIndex !== -1) {
-            messages.splice(messageIndex, 1);
-            saveMessagesToFile();
-            io.emit('deleteMessage', messageId);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
-
-
-
-    // מערך לאחסון תוצאות המשחק
+// מערך לאחסון תוצאות המשחק
 let results = [];
 
 // טעינת תוצאות המשחק מהאחסון המקומי אם קיימות
@@ -98,13 +57,12 @@ function saveResultsToFile() {
     }
 }
 
-
+// טיפול בחיבורים של Socket.io
+io.on('connection', (socket) => {
+    console.log('Client connected');
 
     // שליחת הודעות ללקוח המחובר
     socket.emit('loadMessages', messages);
-
-    // שליחת תוצאות המשחק ללקוח המחובר
-    socket.emit('resultsUpdate', results);
 
     // קבלת הודעה חדשה מהלקוח ושליחתה לכל הלקוחות
     socket.on('sendMessage', (message) => {
@@ -113,6 +71,23 @@ function saveResultsToFile() {
         saveMessagesToFile();
         io.emit('receiveMessage', message);
     });
+
+    // מחיקת הודעה על פי מזהה ואימות משתמש
+    socket.on('deleteMessage', (data) => {
+        const { messageId, userId } = data;
+        console.log(`Deleting message with id ${messageId} for user ${userId}`);
+
+        // נימוק מחיקת הודעה
+        const messageIndex = messages.findIndex(msg => msg.id === messageId && msg.userId === userId);
+        if (messageIndex !== -1) {
+            messages.splice(messageIndex, 1);
+            saveMessagesToFile();
+            io.emit('deleteMessage', messageId);
+        }
+    });
+
+    // שליחת תוצאות המשחק ללקוח המחובר
+    socket.emit('resultsUpdate', results);
 
     // קבלת תוצאה חדשה מהלקוח ושליחתה לכל הלקוחות
     socket.on('newResult', (data) => {
@@ -123,9 +98,11 @@ function saveResultsToFile() {
         saveResultsToFile();
         io.emit('resultsUpdate', results);
     });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+    });
 });
-
-
 
 // הפנה את כל הבקשות לקובץ index.html
 app.get('*', (req, res) => {
@@ -137,7 +114,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
-
-
-
